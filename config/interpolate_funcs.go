@@ -18,6 +18,7 @@ import (
 	"math"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -84,6 +85,7 @@ func Funcs() map[string]ast.Function {
 		"element":      interpolationFuncElement(),
 		"chunklist":    interpolationFuncChunklist(),
 		"file":         interpolationFuncFile(),
+		"file_exists":  interpolationFuncFileExists(),
 		"matchkeys":    interpolationFuncMatchKeys(),
 		"flatten":      interpolationFuncFlatten(),
 		"floor":        interpolationFuncFloor(),
@@ -457,6 +459,31 @@ func interpolationFuncFile() ast.Function {
 			}
 
 			return string(data), nil
+		},
+	}
+}
+
+// interpolationFuncFileExists implements the "file_exists" function that allows
+// checking existence of a file
+func interpolationFuncFileExists() ast.Function {
+	return ast.Function{
+		ArgTypes:   []ast.Type{ast.TypeString},
+		ReturnType: ast.TypeString,
+		Callback: func(args []interface{}) (interface{}, error) {
+			path, err := homedir.Expand(args[0].(string))
+			if err != nil {
+				return "", err
+			}
+			fi, err := os.Stat(path)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return false, nil
+				}
+
+				return false, err
+			}
+
+			return true, nil
 		},
 	}
 }
